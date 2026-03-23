@@ -182,6 +182,10 @@
             font-weight: bold;
         }
 
+        .mini-day.selected {
+            box-shadow: 0 0 0 3px #fbbf24;
+        }
+
         /* Modal Styles */
         .modal {
             display: none;
@@ -280,6 +284,7 @@
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 8px;
+            margin-bottom: 20px;
         }
 
         .large-day {
@@ -334,50 +339,28 @@
             border-color: #667eea;
         }
 
-        .notes-section {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 2px solid #e0e0e0;
+        .large-day.selected {
+            box-shadow: 0 0 0 4px #fbbf24;
         }
 
-        .notes-section h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-
-        .selected-date-info {
+        .selected-info {
             background: #f8f9fa;
-            padding: 10px;
+            padding: 15px;
             border-radius: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            text-align: center;
             font-weight: 500;
-        }
-
-        textarea {
-            width: 100%;
-            min-height: 100px;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 0.95em;
-            resize: vertical;
-        }
-
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
+            color: #667eea;
         }
 
         .button-group {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
             flex-wrap: wrap;
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -388,15 +371,6 @@
             min-width: 120px;
         }
 
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #764ba2;
-        }
-
         .btn-success {
             background: #22c55e;
             color: white;
@@ -404,6 +378,15 @@
 
         .btn-success:hover {
             background: #16a34a;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
         }
 
         .btn-secondary {
@@ -448,6 +431,11 @@
 
         .legend-box.passed {
             background: #ef4444;
+        }
+
+        .legend-box.selected {
+            background: white;
+            border: 3px solid #fbbf24;
         }
 
         @media (max-width: 768px) {
@@ -524,6 +512,10 @@
                 <div class="legend-box passed"></div>
                 <span>Passed (Unmarked)</span>
             </div>
+            <div class="legend-item">
+                <div class="legend-box selected"></div>
+                <span>Selected</span>
+            </div>
         </div>
     </div>
 
@@ -546,15 +538,12 @@
                 </div>
                 <div class="large-days" id="modalDays"></div>
                 
-                <div class="notes-section">
-                    <h3>Notes</h3>
-                    <div class="selected-date-info" id="selectedDateInfo">Select a date</div>
-                    <textarea id="notesInput" placeholder="Add your notes here..."></textarea>
-                    <div class="button-group">
-                        <button class="btn btn-primary" onclick="saveNote()">Save Note</button>
-                        <button class="btn btn-success" onclick="toggleMark()">Toggle Mark</button>
-                        <button class="btn btn-secondary" onclick="clearAllData()">Clear All</button>
-                    </div>
+                <div class="selected-info" id="selectedDateInfo">Click dates to select (multiple selection enabled)</div>
+                
+                <div class="button-group">
+                    <button class="btn btn-success" onclick="toggleMarkSelected()">Toggle Mark Selected</button>
+                    <button class="btn btn-warning" onclick="clearSelection()">Clear Selection</button>
+                    <button class="btn btn-secondary" onclick="clearAllData()">Clear All</button>
                 </div>
             </div>
         </div>
@@ -565,8 +554,7 @@
                           'July', 'August', 'September', 'October', 'November', 'December'];
         
         let markedDates = JSON.parse(localStorage.getItem('markedDates2026') || '{}');
-        let notes = JSON.parse(localStorage.getItem('notes2026') || '{}');
-        let selectedDate = null;
+        let selectedDates = new Set();
         let currentModalMonth = 0;
 
         function getDateKey(date) {
@@ -594,6 +582,10 @@
             return date.getDate() === today.getDate() &&
                    date.getMonth() === today.getMonth() &&
                    date.getFullYear() === today.getFullYear();
+        }
+
+        function isSelected(date) {
+            return selectedDates.has(getDateKey(date));
         }
 
         function renderYearView() {
@@ -639,10 +631,13 @@
                     if (isToday(date)) {
                         dayEl.classList.add('today-day');
                     }
+                    if (isSelected(date)) {
+                        dayEl.classList.add('selected');
+                    }
                     dayEl.textContent = day;
                     dayEl.onclick = (e) => {
                         e.stopPropagation();
-                        selectDate(date);
+                        toggleSelectDate(date);
                         openModal(month);
                     };
                     miniDays.appendChild(dayEl);
@@ -659,6 +654,7 @@
             currentModalMonth = month;
             document.getElementById('modalMonthTitle').textContent = monthNames[month] + ' 2026';
             renderModalCalendar();
+            updateSelectionInfo();
             document.getElementById('monthModal').style.display = 'block';
         }
 
@@ -689,76 +685,77 @@
                 if (isToday(date)) {
                     dayEl.classList.add('today-day');
                 }
+                if (isSelected(date)) {
+                    dayEl.classList.add('selected');
+                }
                 dayEl.textContent = day;
-                dayEl.onclick = () => selectDate(date);
+                dayEl.onclick = () => toggleSelectDate(date);
                 modalDays.appendChild(dayEl);
             }
         }
 
-        function selectDate(date) {
-            selectedDate = date;
+        function toggleSelectDate(date) {
             const dateKey = getDateKey(date);
             
-            document.getElementById('selectedDateInfo').textContent = date.toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
+            if (selectedDates.has(dateKey)) {
+                selectedDates.delete(dateKey);
+            } else {
+                selectedDates.add(dateKey);
+            }
+            
+            renderModalCalendar();
+            updateSelectionInfo();
+        }
+
+        function updateSelectionInfo() {
+            const count = selectedDates.size;
+            if (count === 0) {
+                document.getElementById('selectedDateInfo').textContent = 'Click dates to select (multiple selection enabled)';
+            } else {
+                document.getElementById('selectedDateInfo').textContent = `${count} date${count !== 1 ? 's' : ''} selected`;
+            }
+        }
+
+        function toggleMarkSelected() {
+            if (selectedDates.size === 0) {
+                alert('Please select at least one date first');
+                return;
+            }
+
+            // Determine action: if any selected date is unmarked, mark all; otherwise unmark all
+            const anyUnmarked = Array.from(selectedDates).some(dateKey => !markedDates[dateKey]);
+            
+            selectedDates.forEach(dateKey => {
+                if (anyUnmarked) {
+                    markedDates[dateKey] = true;
+                } else {
+                    delete markedDates[dateKey];
+                }
             });
             
-            document.getElementById('notesInput').value = notes[dateKey] || '';
-            renderModalCalendar();
-        }
-
-        function saveNote() {
-            if (!selectedDate) {
-                alert('Please select a date first');
-                return;
-            }
-
-            const dateKey = getDateKey(selectedDate);
-            const noteText = document.getElementById('notesInput').value;
-            
-            if (noteText.trim()) {
-                notes[dateKey] = noteText;
-            } else {
-                delete notes[dateKey];
-            }
-            
-            localStorage.setItem('notes2026', JSON.stringify(notes));
-            alert('Note saved!');
-        }
-
-        function toggleMark() {
-            if (!selectedDate) {
-                alert('Please select a date first');
-                return;
-            }
-
-            const dateKey = getDateKey(selectedDate);
-            
-            if (markedDates[dateKey]) {
-                delete markedDates[dateKey];
-            } else {
-                markedDates[dateKey] = true;
-            }
-            
             localStorage.setItem('markedDates2026', JSON.stringify(markedDates));
+            selectedDates.clear();
             renderModalCalendar();
             renderYearView();
             updateStats();
+            updateSelectionInfo();
+        }
+
+        function clearSelection() {
+            selectedDates.clear();
+            renderModalCalendar();
+            updateSelectionInfo();
         }
 
         function clearAllData() {
-            if (confirm('Are you sure you want to clear all marked dates and notes?')) {
+            if (confirm('Are you sure you want to clear all marked dates?')) {
                 markedDates = {};
-                notes = {};
+                selectedDates.clear();
                 localStorage.removeItem('markedDates2026');
-                localStorage.removeItem('notes2026');
-                document.getElementById('notesInput').value = '';
                 renderModalCalendar();
                 renderYearView();
                 updateStats();
+                updateSelectionInfo();
                 alert('All data cleared!');
             }
         }
