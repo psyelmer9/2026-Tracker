@@ -1,0 +1,803 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .year-progress {
+            margin: 15px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: rgba(255,255,255,0.9);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .stat-card h3 {
+            color: #667eea;
+            font-size: 0.8em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .stat-card .number {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .year-view {
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .month-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .month-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .month-header {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .mini-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 5px;
+        }
+
+        .mini-weekday {
+            text-align: center;
+            font-size: 0.7em;
+            font-weight: bold;
+            color: #999;
+        }
+
+        .mini-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .mini-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .mini-day.empty {
+            cursor: default;
+        }
+
+        .mini-day.default {
+            color: #000;
+            background: #f5f5f5;
+        }
+
+        .mini-day.default:hover {
+            background: #e0e0e0;
+        }
+
+        .mini-day.marked {
+            color: white;
+            background: #22c55e;
+        }
+
+        .mini-day.passed {
+            color: white;
+            background: #ef4444;
+        }
+
+        .mini-day.today-day {
+            border: 2px solid #667eea;
+            font-weight: bold;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+
+        .close {
+            color: white;
+            font-size: 2em;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close:hover {
+            opacity: 0.8;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .large-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .large-weekday {
+            text-align: center;
+            font-weight: bold;
+            color: #667eea;
+            padding: 10px;
+            font-size: 0.9em;
+        }
+
+        .large-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .large-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            border: 2px solid transparent;
+        }
+
+        .large-day.empty {
+            cursor: default;
+            opacity: 0.3;
+        }
+
+        .large-day.default {
+            color: #000;
+            background: #f5f5f5;
+        }
+
+        .large-day.default:hover {
+            background: #e0e0e0;
+            transform: scale(1.1);
+        }
+
+        .large-day.marked {
+            color: white;
+            background: #22c55e;
+        }
+
+        .large-day.marked:hover {
+            background: #16a34a;
+            transform: scale(1.1);
+        }
+
+        .large-day.passed {
+            color: white;
+            background: #ef4444;
+        }
+
+        .large-day.passed:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+
+        .large-day.today-day {
+            border-color: #667eea;
+        }
+
+        .notes-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .notes-section h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .selected-date-info {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.95em;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #764ba2;
+        }
+
+        .btn-success {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #16a34a;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #c0c0c0;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 2px solid #e0e0e0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .legend-box.default {
+            background: #f5f5f5;
+            border: 2px solid #000;
+        }
+
+        .legend-box.marked {
+            background: #22c55e;
+        }
+
+        .legend-box.passed {
+            background: #ef4444;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .year-view {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .modal-content {
+                margin: 10% auto;
+                width: 95%;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>2026 Year Tracker</h1>
+            <div class="year-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Days Elapsed</h3>
+                <div class="number" id="daysElapsed">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Days Remaining</h3>
+                <div class="number" id="daysRemaining">365</div>
+            </div>
+            <div class="stat-card">
+                <h3>Current Week</h3>
+                <div class="number" id="currentWeek">1</div>
+            </div>
+            <div class="stat-card">
+                <h3>Marked Days</h3>
+                <div class="number" id="markedDays">0</div>
+            </div>
+        </div>
+
+        <div class="year-view" id="yearView"></div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box default"></div>
+                <span>Default</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box marked"></div>
+                <span>Marked</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box passed"></div>
+                <span>Passed (Unmarked)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="monthModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalMonthTitle">January 2026</h2>
+                <button class="close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="large-weekdays">
+                    <div class="large-weekday">Sun</div>
+                    <div class="large-weekday">Mon</div>
+                    <div class="large-weekday">Tue</div>
+                    <div class="large-weekday">Wed</div>
+                    <div class="large-weekday">Thu</div>
+                    <div class="large-weekday">Fri</div>
+                    <div class="large-weekday">Sat</div>
+                </div>
+                <div class="large-days" id="modalDays"></div>
+                
+                <div class="notes-section">
+                    <h3>Notes</h3>
+                    <div class="selected-date-info" id="selectedDateInfo">Select a date</div>
+                    <textarea id="notesInput" placeholder="Add your notes here..."></textarea>
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="saveNote()">Save Note</button>
+                        <button class="btn btn-success" onclick="toggleMark()">Toggle Mark</button>
+                        <button class="btn btn-secondary" onclick="clearAllData()">Clear All</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+        
+        let markedDates = JSON.parse(localStorage.getItem('markedDates2026') || '{}');
+        let notes = JSON.parse(localStorage.getItem('notes2026') || '{}');
+        let selectedDate = null;
+        let currentModalMonth = 0;
+
+        function getDateKey(date) {
+            return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+        }
+
+        function getDayClass(date) {
+            const dateKey = getDateKey(date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const compareDate = new Date(date);
+            compareDate.setHours(0, 0, 0, 0);
+            
+            if (markedDates[dateKey]) {
+                return 'marked';
+            } else if (compareDate < today) {
+                return 'passed';
+            } else {
+                return 'default';
+            }
+        }
+
+        function isToday(date) {
+            const today = new Date();
+            return date.getDate() === today.getDate() &&
+                   date.getMonth() === today.getMonth() &&
+                   date.getFullYear() === today.getFullYear();
+        }
+
+        function renderYearView() {
+            const yearView = document.getElementById('yearView');
+            yearView.innerHTML = '';
+
+            for (let month = 0; month < 12; month++) {
+                const monthCard = document.createElement('div');
+                monthCard.className = 'month-card';
+                monthCard.onclick = () => openModal(month);
+
+                const monthHeader = document.createElement('div');
+                monthHeader.className = 'month-header';
+                monthHeader.textContent = monthNames[month];
+
+                const miniWeekdays = document.createElement('div');
+                miniWeekdays.className = 'mini-weekdays';
+                ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(day => {
+                    const wd = document.createElement('div');
+                    wd.className = 'mini-weekday';
+                    wd.textContent = day;
+                    miniWeekdays.appendChild(wd);
+                });
+
+                const miniDays = document.createElement('div');
+                miniDays.className = 'mini-days';
+
+                const firstDay = new Date(2026, month, 1).getDay();
+                const daysInMonth = new Date(2026, month + 1, 0).getDate();
+
+                // Empty cells
+                for (let i = 0; i < firstDay; i++) {
+                    const emptyDay = document.createElement('div');
+                    emptyDay.className = 'mini-day empty';
+                    miniDays.appendChild(emptyDay);
+                }
+
+                // Days
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = new Date(2026, month, day);
+                    const dayEl = document.createElement('div');
+                    dayEl.className = 'mini-day ' + getDayClass(date);
+                    if (isToday(date)) {
+                        dayEl.classList.add('today-day');
+                    }
+                    dayEl.textContent = day;
+                    dayEl.onclick = (e) => {
+                        e.stopPropagation();
+                        selectDate(date);
+                        openModal(month);
+                    };
+                    miniDays.appendChild(dayEl);
+                }
+
+                monthCard.appendChild(monthHeader);
+                monthCard.appendChild(miniWeekdays);
+                monthCard.appendChild(miniDays);
+                yearView.appendChild(monthCard);
+            }
+        }
+
+        function openModal(month) {
+            currentModalMonth = month;
+            document.getElementById('modalMonthTitle').textContent = monthNames[month] + ' 2026';
+            renderModalCalendar();
+            document.getElementById('monthModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('monthModal').style.display = 'none';
+            renderYearView();
+        }
+
+        function renderModalCalendar() {
+            const modalDays = document.getElementById('modalDays');
+            modalDays.innerHTML = '';
+
+            const firstDay = new Date(2026, currentModalMonth, 1).getDay();
+            const daysInMonth = new Date(2026, currentModalMonth + 1, 0).getDate();
+
+            // Empty cells
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'large-day empty';
+                modalDays.appendChild(emptyDay);
+            }
+
+            // Days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(2026, currentModalMonth, day);
+                const dayEl = document.createElement('div');
+                dayEl.className = 'large-day ' + getDayClass(date);
+                if (isToday(date)) {
+                    dayEl.classList.add('today-day');
+                }
+                dayEl.textContent = day;
+                dayEl.onclick = () => selectDate(date);
+                modalDays.appendChild(dayEl);
+            }
+        }
+
+        function selectDate(date) {
+            selectedDate = date;
+            const dateKey = getDateKey(date);
+            
+            document.getElementById('selectedDateInfo').textContent = date.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            document.getElementById('notesInput').value = notes[dateKey] || '';
+            renderModalCalendar();
+        }
+
+        function saveNote() {
+            if (!selectedDate) {
+                alert('Please select a date first');
+                return;
+            }
+
+            const dateKey = getDateKey(selectedDate);
+            const noteText = document.getElementById('notesInput').value;
+            
+            if (noteText.trim()) {
+                notes[dateKey] = noteText;
+            } else {
+                delete notes[dateKey];
+            }
+            
+            localStorage.setItem('notes2026', JSON.stringify(notes));
+            alert('Note saved!');
+        }
+
+        function toggleMark() {
+            if (!selectedDate) {
+                alert('Please select a date first');
+                return;
+            }
+
+            const dateKey = getDateKey(selectedDate);
+            
+            if (markedDates[dateKey]) {
+                delete markedDates[dateKey];
+            } else {
+                markedDates[dateKey] = true;
+            }
+            
+            localStorage.setItem('markedDates2026', JSON.stringify(markedDates));
+            renderModalCalendar();
+            renderYearView();
+            updateStats();
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear all marked dates and notes?')) {
+                markedDates = {};
+                notes = {};
+                localStorage.removeItem('markedDates2026');
+                localStorage.removeItem('notes2026');
+                document.getElementById('notesInput').value = '';
+                renderModalCalendar();
+                renderYearView();
+                updateStats();
+                alert('All data cleared!');
+            }
+        }
+
+        function updateStats() {
+            const start = new Date(2026, 0, 1);
+            const end = new Date(2026, 11, 31);
+            const today = new Date();
+            
+            const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            const elapsed = Math.max(0, Math.ceil((today - start) / (1000 * 60 * 60 * 24)));
+            const remaining = Math.max(0, totalDays - elapsed);
+            
+            const percentage = Math.min(100, Math.max(0, (elapsed / totalDays) * 100));
+            
+            document.getElementById('progressFill').style.width = percentage + '%';
+            document.getElementById('progressFill').textContent = percentage.toFixed(1) + '%';
+            document.getElementById('daysElapsed').textContent = elapsed;
+            document.getElementById('daysRemaining').textContent = remaining;
+            
+            const weekNumber = Math.ceil(elapsed / 7);
+            document.getElementById('currentWeek').textContent = weekNumber;
+            
+            const markedCount = Object.keys(markedDates).length;
+            document.getElementById('markedDays').textContent = markedCount;
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('monthModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Initialize
+        updateStats();
+        renderYearView();
+        setInterval(updateStats, 60000); // Update every minute
+    </script>
+</body>
+</html>
