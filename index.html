@@ -280,6 +280,7 @@
             display: grid;
             grid-template-columns: repeat(7, 1fr);
             gap: 8px;
+            margin-bottom: 20px;
         }
 
         .large-day {
@@ -334,50 +335,24 @@
             border-color: #667eea;
         }
 
-        .notes-section {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 2px solid #e0e0e0;
-        }
-
-        .notes-section h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-
-        .selected-date-info {
+        .selected-info {
             background: #f8f9fa;
-            padding: 10px;
+            padding: 15px;
             border-radius: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            text-align: center;
             font-weight: 500;
-        }
-
-        textarea {
-            width: 100%;
-            min-height: 100px;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-family: inherit;
-            font-size: 0.95em;
-            resize: vertical;
-        }
-
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
+            color: #667eea;
         }
 
         .button-group {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
             flex-wrap: wrap;
         }
 
         .btn {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -386,15 +361,6 @@
             transition: all 0.3s ease;
             flex: 1;
             min-width: 120px;
-        }
-
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: #764ba2;
         }
 
         .btn-success {
@@ -546,15 +512,11 @@
                 </div>
                 <div class="large-days" id="modalDays"></div>
                 
-                <div class="notes-section">
-                    <h3>Notes</h3>
-                    <div class="selected-date-info" id="selectedDateInfo">Select a date</div>
-                    <textarea id="notesInput" placeholder="Add your notes here..."></textarea>
-                    <div class="button-group">
-                        <button class="btn btn-primary" onclick="saveNote()">Save Note</button>
-                        <button class="btn btn-success" onclick="toggleMark()">Toggle Mark</button>
-                        <button class="btn btn-secondary" onclick="clearAllData()">Clear All</button>
-                    </div>
+                <div class="selected-info" id="selectedDateInfo">Click a date to select</div>
+                
+                <div class="button-group">
+                    <button class="btn btn-success" onclick="toggleMark()">Toggle Mark</button>
+                    <button class="btn btn-secondary" onclick="clearAllData()">Clear All</button>
                 </div>
             </div>
         </div>
@@ -565,7 +527,6 @@
                           'July', 'August', 'September', 'October', 'November', 'December'];
         
         let markedDates = JSON.parse(localStorage.getItem('markedDates2026') || '{}');
-        let notes = JSON.parse(localStorage.getItem('notes2026') || '{}');
         let selectedDate = null;
         let currentModalMonth = 0;
 
@@ -697,7 +658,6 @@
 
         function selectDate(date) {
             selectedDate = date;
-            const dateKey = getDateKey(date);
             
             document.getElementById('selectedDateInfo').textContent = date.toLocaleDateString('en-US', {
                 weekday: 'long',
@@ -706,27 +666,7 @@
                 day: 'numeric'
             });
             
-            document.getElementById('notesInput').value = notes[dateKey] || '';
             renderModalCalendar();
-        }
-
-        function saveNote() {
-            if (!selectedDate) {
-                alert('Please select a date first');
-                return;
-            }
-
-            const dateKey = getDateKey(selectedDate);
-            const noteText = document.getElementById('notesInput').value;
-            
-            if (noteText.trim()) {
-                notes[dateKey] = noteText;
-            } else {
-                delete notes[dateKey];
-            }
-            
-            localStorage.setItem('notes2026', JSON.stringify(notes));
-            alert('Note saved!');
         }
 
         function toggleMark() {
@@ -750,12 +690,9 @@
         }
 
         function clearAllData() {
-            if (confirm('Are you sure you want to clear all marked dates and notes?')) {
+            if (confirm('Are you sure you want to clear all marked dates?')) {
                 markedDates = {};
-                notes = {};
                 localStorage.removeItem('markedDates2026');
-                localStorage.removeItem('notes2026');
-                document.getElementById('notesInput').value = '';
                 renderModalCalendar();
                 renderYearView();
                 updateStats();
